@@ -1,15 +1,27 @@
-# Datos y materiales locales no publicables
-/data/
-/corpus/
-/imports/
-/exports/
-/.assistant/
-/site/
+# Estado persistente y datos de trabajo locales
+/data/*.sqlite
+/data/*.sqlite-*
+/corpus/originales/*
+!/corpus/originales/.gitkeep
+/imports/inbox/*
+!/imports/inbox/.gitkeep
+/imports/revisados/*
+!/imports/revisados/.gitkeep
+/exports/*
+!/exports/.gitkeep
 
-# Configuración y temporales locales
+# Documentación y contexto privado del asistente
+/.assistant/
+
+# Secretos y configuración local
 .env
 .env.*
 *.local
+
+# Temporales
 __pycache__/
 *.pyc
 .DS_Store
+
+# Salida transitoria del generador del sitio
+/site/

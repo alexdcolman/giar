@@ -1,25 +1,59 @@
-# GIAR — Grupo de Investigación en Archivos de la Represión
+# GIAR – Base de conocimiento
 
-Repositorio público del Grupo de Investigación en Archivos de la Represión (GIAR).
+Repositorio del proyecto del Grupo de Investigación en Archivos de la Represión (GIAR).
 
-Sitio web: https://alexdcolman.github.io/giar/
+## Propósito
 
-## Alcance de este repositorio
+Construir de manera acumulativa, trazable y revisable una base de conocimiento derivada del corpus real del grupo. La base debe sostener un sitio público con páginas de integrantes y ex integrantes, proyectos, temas, conceptos, publicaciones, fuentes archivísticas y no archivísticas, unidades documentales, además de un grafo navegable.
 
-Este repositorio reúne una selección de documentación metodológica y técnica que permite comprender la estructura de la base de conocimiento del GIAR, sus criterios de procedencia, identidad y desambiguación, y los contratos generales usados para representar la información.
+GIAR es un proyecto separado de Archive Workbench. No comparte su repositorio ni sus bases descartables. Archive Workbench puede aportar infraestructura y referencias externas, pero GIAR conserva su propia base, contratos, historial y modelo semántico.
 
-La rama `gh-pages` contiene la versión estática del sitio público.
+## Referencia inicial de Archive Workbench
 
-## Contenido público
+La arquitectura se contrastó el 2026-09-05 con Archive Workbench `0.89.0`, rama `main`, commit `9ea0c79db0faa7676093c5d3cdc407779835350b`. Esa referencia queda fijada para evitar dependencias silenciosas de cambios posteriores.
 
-- `docs/MODELO_DE_DATOS.md`: estructura conceptual de la base de conocimiento.
-- `docs/PROCEDENCIA_Y_EVIDENCIA.md`: criterios de trazabilidad de afirmaciones y evidencias.
-- `docs/IDENTIDAD_Y_DESAMBIGUACION.md`: reglas para identidad, granularidad y resolución de entidades.
-- `docs/CONTRATOS_DE_IMPORTACION.md`: contratos generales de representación e importación.
-- `schemas/`: esquemas JSON correspondientes a esos contratos.
-- `migrations/`: definición estructural del modelo de datos.
-- `examples/`: ejemplo mínimo del formato de lote.
+## Regla central
 
-## Material no incluido
+Cada publicación se lee completa antes de integrarla. Se incorpora sólo lo sustentado. Toda afirmación conserva procedencia y evidencia cuando la fuente lo permite. Una coincidencia nominal no resuelve identidad y ninguna relación analítica se crea sin evidencia.
 
-El repositorio público no contiene el corpus de publicaciones, la base maestra de trabajo, materiales originales, notas de revisión, informes operativos, documentación de continuidad ni otros archivos internos de trabajo. La información visible en el sitio se publica mediante una proyección editorial revisada.
+## Documentación
+
+`docs/` es público y versionable. Ver primero:
+
+1. `docs/README.md`
+2. `docs/POLITICA_DOCUMENTAL.md`
+3. `docs/MODELO_DE_DATOS.md`
+4. `docs/PROCEDENCIA_Y_EVIDENCIA.md`
+5. `docs/IDENTIDAD_Y_DESAMBIGUACION.md`
+6. `docs/CONTRATOS_DE_IMPORTACION.md`
+7. `docs/INGESTA_POR_LOTES.md`
+8. `docs/POLITICA_SITIO_PUBLICO.md`
+9. `docs/PILOTO_MAGNANEGO_01.md`
+10. `docs/INTEGRACION_LOTE002_BONILLA.md`
+11. `docs/INTEGRACION_LOTE003_KRATJE.md`
+12. `docs/INTEGRACION_LOTE004_JANICA.md`
+13. `docs/INTEGRACION_LOTE005_LEDESMA.md`
+14. `docs/INTEGRACION_LOTE006_KLEMEN.md`
+15. `docs/INTEGRACION_LOTE007_ROMERO.md`
+16. `docs/INTEGRACION_LOTE008_CHIAVARINO.md`
+17. `docs/INTEGRACION_LOTE009_COLMAN.md`
+18. `docs/INTEGRACION_LOTE010_VITALE.md`
+19. `docs/INTEGRACION_LOTE011_BETTENDORFF.md`
+20. `docs/INTEGRACION_LOTE012_PAULINA_BETTENDORFF.md`
+
+`.assistant/` contiene documentación privada de continuidad y está excluido por `.gitignore`.
+
+## Estado de la base
+
+El núcleo `0.1` vive en `migrations/0001_core.sql`. Los primeros lotes produjeron las versiones `0.2`, `0.3` y `0.4`, implementadas por `migrations/0002_memberships_contributors_archival_references.sql`, `migrations/0003_public_projection_and_concept_definitions.sql` y `migrations/0004_source_assets.sql`. La versión `0.4` activa fuentes primarias no archivísticas como objetos del corpus, sin confundirlas con la procedencia técnica de la ingesta.
+
+`data/giar.sqlite` es la base persistente local y no se versiona. Los PDF tampoco se versionan; su identidad de bytes, paginación y estado de lectura quedan registrados en la base.
+
+## Sitio
+
+`scripts/build_site.py --pilot` genera la vista de trabajo usada para comprobar la proyección corpus → base → páginas → grafo. La vista puede usar datos todavía en revisión, pero mantiene la misma lógica editorial del sitio: no expone estados técnicos ni convierte la interfaz en una pantalla de auditoría. No equivale al despliegue del sitio GIAR.
+
+
+## Revisión vigente
+
+REV52 (2026-09-08) mantiene el modelo `0.4` y acumula 94 publicaciones, 188 conceptos, 100 elementos discursivos, 17 temas, 79 autoridades/entidades, 70 unidades archivísticas y 17 fuentes no archivísticas. La cuarta tanda de María Alejandra Vitale incorpora seis trabajos leídos completos (112/112 páginas), con reconciliación de conceptos, elementos discursivos, entidades, archivos y temas. Adriana Minardi suma fotografía, correo y enlace a GILEC siguiendo el mismo contrato público de contacto de las fichas personales existentes. El sitio genera 514 páginas por salida y el grafo 497 nodos y 1580 relaciones; la auditoría REV52 verifica 0 relaciones nuevas faltantes entre base, páginas y grafo.
