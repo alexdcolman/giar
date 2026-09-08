@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/source-analysis-0.1.json",
+  "title": "GIAR source analysis 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "batch_id",
+    "item_id",
+    "reading",
+    "source",
+    "evidence_fragments",
+    "assertions",
+    "uncertainties",
+    "model_change_requests"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1"
+    },
+    "batch_id": {
+      "type": "string"
+    },
+    "item_id": {
+      "type": "string"
+    },
+    "reading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unread",
+            "in_progress",
+            "complete",
+            "blocked"
+          ]
+        },
+        "coverage_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitation_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "source_kind",
+        "title"
+      ],
+      "properties": {
+        "source_kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "citation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "record_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "local_id",
+          "record_kind",
+          "label"
+        ],
+        "properties": {
+          "local_id": {
+            "type": "string"
+          },
+          "record_kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "identity_status": {
+            "enum": [
+              "new_candidate",
+              "existing_by_decision",
+              "unresolved"
+            ]
+          },
+          "existing_record_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "evidence_fragments": {
+      "type": "array",
+      "items": {
+        "$ref": "giar-evidence-fragment-0.1.json"
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "$ref": "giar-assertion-0.1.json"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "kind",
+          "note"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "related_local_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "model_change_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "problem",
+          "example"
+        ],
+        "properties": {
+          "problem": {
+            "type": "string"
+          },
+          "example": {
+            "type": "string"
+          },
+          "proposed_change": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/archival-reference-0.2.json",
+  "title": "GIAR archival reference 0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["local_id", "raw_reference", "normalization_status"],
+  "properties": {
+    "local_id": {"type": "string", "minLength": 1},
+    "raw_reference": {"type": "string", "minLength": 1},
+    "page_label": {"type": ["string", "null"]},
+    "file_page_index": {"type": ["integer", "null"], "minimum": 1},
+    "document_date": {"type": ["string", "null"]},
+    "cited_folio": {"type": ["string", "null"]},
+    "archive_local_id": {"type": ["string", "null"]},
+    "matched_unit_local_id": {"type": ["string", "null"]},
+    "normalization_status": {"enum": ["normalized", "provisional", "unresolved", "conflict"]},
+    "interpretation_note": {"type": ["string", "null"]}
+  }
+}

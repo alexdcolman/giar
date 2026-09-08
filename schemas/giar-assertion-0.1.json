@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/giar-assertion-0.1.json",
+  "title": "GIAR assertion 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "local_id",
+    "subject_ref",
+    "predicate",
+    "assertion_type",
+    "epistemic_layer",
+    "certainty_status",
+    "review_status",
+    "evidence_refs"
+  ],
+  "oneOf": [
+    {
+      "required": [
+        "object_record_ref"
+      ],
+      "not": {
+        "required": [
+          "object_value"
+        ]
+      }
+    },
+    {
+      "required": [
+        "object_value"
+      ],
+      "not": {
+        "required": [
+          "object_record_ref"
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "local_id": {
+      "type": "string"
+    },
+    "subject_ref": {
+      "type": "string"
+    },
+    "predicate": {
+      "type": "string",
+      "minLength": 1
+    },
+    "object_record_ref": {
+      "type": "string"
+    },
+    "object_value": {},
+    "assertion_type": {
+      "type": "string"
+    },
+    "epistemic_layer": {
+      "enum": [
+        "bibliographic_info",
+        "institutional_info",
+        "author_claim",
+        "research_result",
+        "editorial_synthesis",
+        "analyst_inference"
+      ]
+    },
+    "asserted_by_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "certainty_status": {
+      "enum": [
+        "explicit",
+        "qualified",
+        "uncertain",
+        "inferred"
+      ]
+    },
+    "review_status": {
+      "enum": [
+        "proposed",
+        "needs_review",
+        "approved",
+        "rejected",
+        "deferred"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/membership-0.2.json",
+  "title": "GIAR membership 0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["person_local_id", "group_local_id", "membership_status", "source_local_id"],
+  "properties": {
+    "person_local_id": {"type": "string"},
+    "group_local_id": {"type": "string"},
+    "membership_status": {"type": "string"},
+    "valid_from": {"type": ["string", "null"]},
+    "valid_to": {"type": ["string", "null"]},
+    "as_of_date": {"type": ["string", "null"]},
+    "source_local_id": {"type": "string"},
+    "evidence_local_id": {"type": ["string", "null"]},
+    "review_status": {"type": "string"},
+    "note": {"type": ["string", "null"]}
+  }
+}

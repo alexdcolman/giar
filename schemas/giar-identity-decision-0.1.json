@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/identity-decision-0.1.json",
+  "title": "GIAR identity decision 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "left_ref",
+    "right_ref",
+    "decision",
+    "rationale",
+    "decided_by",
+    "decided_at"
+  ],
+  "properties": {
+    "left_ref": {
+      "type": "string"
+    },
+    "right_ref": {
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "same",
+        "distinct",
+        "unresolved",
+        "deferred"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "decided_by": {
+      "type": "string"
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

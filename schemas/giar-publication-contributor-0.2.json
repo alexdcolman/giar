@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/publication-contributor-0.2.json",
+  "title": "GIAR publication contributor 0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["publication_local_id", "display_name", "role", "source_local_id"],
+  "properties": {
+    "publication_local_id": {"type": "string"},
+    "person_local_id": {"type": ["string", "null"]},
+    "display_name": {"type": "string", "minLength": 1},
+    "role": {"type": "string"},
+    "sort_order": {"type": "integer", "minimum": 0},
+    "affiliation_text": {"type": ["string", "null"]},
+    "source_local_id": {"type": "string"},
+    "evidence_local_id": {"type": ["string", "null"]},
+    "review_status": {"type": "string"}
+  }
+}

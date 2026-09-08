@@ -1,0 +1,15 @@
+# Datos y materiales locales no publicables
+/data/
+/corpus/
+/imports/
+/exports/
+/.assistant/
+/site/
+
+# Configuración y temporales locales
+.env
+.env.*
+*.local
+__pycache__/
+*.pyc
+.DS_Store

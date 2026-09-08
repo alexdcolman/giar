@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://giar.local/schema/giar-evidence-fragment-0.1.json",
+  "title": "GIAR evidence fragment 0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "local_id",
+    "locator_quality"
+  ],
+  "properties": {
+    "local_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "page_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "file_page_index": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "section_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "paragraph_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "time_start_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "time_end_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "char_start": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "char_end": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "locator_quality": {
+      "enum": [
+        "exact",
+        "approximate",
+        "unavailable"
+      ]
+    },
+    "locator_note": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "excerpt": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "excerpt_sha256": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-fA-F0-9]{64}$"
+    }
+  }
+}

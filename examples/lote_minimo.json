@@ -1,0 +1,17 @@
+{
+  "schema_version": "0.1",
+  "batch_id": "GIAR-BATCH-0001",
+  "received_at": "2026-09-05T13:24:00-03:00",
+  "supplied_by": "GIAR",
+  "note": "Ejemplo estructural, no contiene datos reales.",
+  "items": [
+    {
+      "item_id": "pub-001",
+      "source_kind": "academic_publication",
+      "original_name": "publicacion.pdf",
+      "source_url": null,
+      "sha256": null,
+      "context_note": "Completar al recibir la fuente."
+    }
+  ]
+}
