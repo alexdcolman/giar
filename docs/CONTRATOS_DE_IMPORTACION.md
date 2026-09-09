@@ -1,5 +1,8 @@
 # Contratos de importación
 
+> Documentación técnica pública del **Grupo de Investigación en Archivos de la Represión (GIAR)**.  
+> Sitio: https://alexdcolman.github.io/giar/
+
 ## Objetivo
 
 Los contratos separan extracción de integración. Un lote puede analizarse, validarse y revisar conflictos antes de modificar la base curada.
