@@ -1,5 +1,8 @@
 # Modelo de datos v0.4
 
+> Documentación técnica pública del **Grupo de Investigación en Archivos de la Represión (GIAR)**.  
+> Sitio: https://alexdcolman.github.io/giar/
+
 ## 1. Principio general
 
 La unidad central es **registro + afirmación + evidencia + revisión**. Los registros dan identidad persistente; las afirmaciones expresan qué sostiene una fuente; la evidencia indica dónde; la revisión determina qué puede considerarse integrado o publicable.
