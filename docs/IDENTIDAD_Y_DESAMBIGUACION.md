@@ -1,5 +1,8 @@
 # Identidad, desambiguación y granularidad
 
+> Documentación técnica pública del **Grupo de Investigación en Archivos de la Represión (GIAR)**.  
+> Sitio: https://alexdcolman.github.io/giar/
+
 ## 1. Identidad no nominal
 
 Dos registros no son idénticos sólo porque compartan nombre, sigla o alias. La coincidencia produce, como máximo, un candidato de identidad que debe resolverse con evidencia.
