@@ -1,5 +1,8 @@
 # Procedencia y evidencia
 
+> Documentación técnica pública del **Grupo de Investigación en Archivos de la Represión (GIAR)**.  
+> Sitio: https://alexdcolman.github.io/giar/
+
 ## 1. Regla general
 
 Toda afirmación incorporada a la base conserva la fuente que la sustenta y, cuando la representación lo permite, un localizador preciso.
