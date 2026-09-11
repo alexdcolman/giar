@@ -11,7 +11,7 @@
   if(!isTouch||!isPhone) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev64-mobile-graph';
+  style.id='giar-rev65-mobile-graph';
   style.textContent=`@media(max-width:700px){
     .graph-stage,.graph-cy{height:clamp(360px,50vh,440px)!important;min-height:360px!important}
     .graph-inspector{max-height:16vh!important}
@@ -32,8 +32,8 @@
     const container=document.getElementById('graph-cy');
     const stage=document.getElementById('graph-stage');
     if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV64_MOBILE__) return;
-    cy.__GIAR_REV64_MOBILE__=true;
+    if(cy.__GIAR_REV65_MOBILE__) return;
+    cy.__GIAR_REV65_MOBILE__=true;
 
     cy.style()
       .selector('node.label-visible')
@@ -46,6 +46,10 @@
       .style({'text-opacity':0,'text-background-opacity':0,'text-border-width':0})
       .selector('node[type = "person"].is-hovered')
       .style({'text-opacity':0,'text-background-opacity':0,'text-border-width':0})
+      .selector('node[type = "person"].mobile-selection-native.label-visible.is-related')
+      .style({'z-index':100,'text-opacity':1,'text-background-opacity':1,'text-background-padding':4,'text-border-width':1})
+      .selector('node[type = "person"].mobile-selection-native.label-visible.is-selected')
+      .style({'z-index':120,'text-opacity':1,'text-background-opacity':1,'text-background-padding':4,'text-border-width':1})
       .selector('node.is-dim')
       .style({'text-opacity':0,'text-background-opacity':0,'text-border-width':0})
       .update();
@@ -61,9 +65,20 @@
 
     const labelEls=new Map();
     const visibleNodes=()=>cy.nodes().filter(n=>!n.hasClass('is-hidden'));
-    const visiblePeople=()=>{
-      const hasSelection=cy.nodes('.is-selected').length>0;
-      return visibleNodes().filter('[type = "person"]').filter(n=>!hasSelection||!n.hasClass('is-dim')).toArray();
+    const hasSelection=()=>cy.nodes('.is-selected').filter(n=>!n.hasClass('is-hidden')).length>0;
+    const visiblePeople=()=>visibleNodes().filter('[type = "person"]').toArray();
+
+    const syncPersonMode=()=>{
+      const selected=hasSelection();
+      cy.nodes('[type = "person"]').toggleClass('mobile-selection-native',selected);
+      labels.style.display=selected?'none':'';
+      lines.style.display=selected?'none':'';
+      if(selected){
+        for(const [,el] of labelEls)el.remove();
+        labelEls.clear();
+        lines.replaceChildren();
+      }
+      return selected;
     };
 
     const fitBodies=(scale=.84)=>{
@@ -85,13 +100,18 @@
       const selected=cy.nodes('.is-selected').filter(n=>!n.hasClass('is-hidden'));
       if(!selected.length){lastFocusedSelection='';return false;}
       const nodes=cy.nodes('.is-selected, .is-related').filter(n=>!n.hasClass('is-hidden'));
-      const edges=cy.edges('.is-related').filter(e=>!e.hasClass('is-hidden'));
-      const target=nodes.union(edges);
-      if(!target.length) return false;
-      const padding=nodes.length<=2?115:(nodes.length<=9?88:62);
+      if(!nodes.length) return false;
+      const bb=nodes.boundingBox({includeLabels:false,includeOverlays:false,includeUnderlays:false});
+      const w=Math.max(1,container.clientWidth),h=Math.max(1,container.clientHeight),pad=22;
+      const fitZoom=Math.min((w-pad*2)/Math.max(1,bb.w),(h-pad*2)/Math.max(1,bb.h));
+      const count=nodes.length;
+      const boost=count>40?1.75:(count>18?1.62:(count>7?1.48:1.34));
+      const level=Math.max(cy.minZoom(),Math.min(cy.maxZoom(),fitZoom*boost));
+      const cx=(bb.x1+bb.x2)/2,cy0=(bb.y1+bb.y2)/2;
+      const pan={x:w/2-cx*level,y:h/2-cy0*level};
       cy.stop(true,false);
       cy.resize();
-      cy.animate({fit:{eles:target,padding}}, {duration:220,easing:'ease-in-out-cubic',queue:false});
+      cy.animate({zoom:level,pan}, {duration:240,easing:'ease-in-out-cubic',queue:false});
       lastFocusedSelection=selected[0].id();
       return true;
     };
@@ -131,6 +151,13 @@
     };
 
     const renderPeople=()=>{
+      if(syncPersonMode()){
+        window.__GIAR_PERSON_LABEL_VISIBLE_COUNT__=cy.nodes('[type = "person"].mobile-selection-native.label-visible').filter(n=>!n.hasClass('is-dim')).length;
+        window.__GIAR_PERSON_LABEL_OVERLAPS__=null;
+        window.__GIAR_PERSON_LABEL_LAYOUT__='native-selection';
+        return;
+      }
+
       const people=visiblePeople();
       const keep=new Set(people.map(n=>n.id()));
       for(const [id,el] of labelEls){if(!keep.has(id)){el.remove();labelEls.delete(id)}}
@@ -179,7 +206,7 @@
       placeColumn(right,'right');
       window.__GIAR_PERSON_LABEL_VISIBLE_COUNT__=people.length;
       window.__GIAR_PERSON_LABEL_OVERLAPS__=0;
-      window.__GIAR_PERSON_LABEL_LAYOUT__=cy.nodes('.is-selected').length?'mobile-related-tree-overlay':'mobile-two-column-overlay';
+      window.__GIAR_PERSON_LABEL_LAYOUT__='mobile-two-column-overlay';
     };
 
     let overlayRAF=0,gestureTimer=0;
@@ -188,6 +215,7 @@
       overlayRAF=requestAnimationFrame(renderPeople);
     };
     const beginOverlayGesture=()=>{
+      if(hasSelection()) return;
       labels.classList.add('is-gesturing');
       lines.classList.add('is-gesturing');
       clearTimeout(gestureTimer);
@@ -207,26 +235,26 @@
     },true);
 
     const showAll=document.getElementById('show-all');
-    if(showAll) showAll.addEventListener('click',()=>setTimeout(()=>{lastFocusedSelection='';fitBodies();renderPeople()},30));
+    if(showAll) showAll.addEventListener('click',()=>setTimeout(()=>{lastFocusedSelection='';syncPersonMode();fitBodies();renderPeople()},30));
 
     const visibility=document.getElementById('graph-visibility');
     if(visibility) visibility.addEventListener('toggle',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      if(!cy.nodes('.is-selected').length) fitBodies();
+      if(!hasSelection()) fitBodies();
       else focusSelection();
       renderPeople();
     })));
 
     const depth=document.getElementById('selection-depth');
-    if(depth) depth.addEventListener('change',()=>setTimeout(()=>{focusSelection();renderPeople()},30));
-    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(()=>{focusIfSelectionChanged();renderPeople()},30)));
+    if(depth) depth.addEventListener('change',()=>setTimeout(()=>{syncPersonMode();focusSelection();renderPeople()},30));
+    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(()=>{syncPersonMode();focusIfSelectionChanged();renderPeople()},30)));
     document.addEventListener('click',evt=>{
-      if(evt.target.closest?.('.graph-search-result')) setTimeout(()=>{focusIfSelectionChanged();renderPeople()},40);
+      if(evt.target.closest?.('.graph-search-result')) setTimeout(()=>{syncPersonMode();focusIfSelectionChanged();renderPeople()},40);
     });
     cy.on('pan zoom',beginOverlayGesture);
-    cy.on('tap',()=>setTimeout(()=>{focusIfSelectionChanged();renderPeople()},24));
-    window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(!cy.nodes('.is-selected').length)fitBodies();else focusSelection();renderPeople()}));
+    cy.on('tap',()=>setTimeout(()=>{syncPersonMode();focusIfSelectionChanged();renderPeople()},24));
+    window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(!hasSelection())fitBodies();else focusSelection();renderPeople()}));
     document.addEventListener('fullscreenchange',()=>setTimeout(()=>{
-      if(!cy.nodes('.is-selected').length) fitBodies();
+      if(!hasSelection()) fitBodies();
       else focusSelection();
       renderPeople();
     },120));
@@ -235,10 +263,10 @@
       fitBodies();
       renderPeople();
     }));
-    window.__GIAR_REV64_FIT_MOBILE__=fitBodies;
-    window.__GIAR_REV64_FOCUS_SELECTION__=focusSelection;
-    window.__GIAR_REV64_RENDER_PERSON_LABELS__=renderPeople;
-    window.__GIAR_PERSON_LABEL_MODE__='visible-default-clickable-selection-silences-dim';
+    window.__GIAR_REV65_FIT_MOBILE__=fitBodies;
+    window.__GIAR_REV65_FOCUS_SELECTION__=focusSelection;
+    window.__GIAR_REV65_RENDER_PERSON_LABELS__=renderPeople;
+    window.__GIAR_PERSON_LABEL_MODE__='overlay-default-native-on-selection';
   };
 
   if(document.readyState==='complete') setup();
