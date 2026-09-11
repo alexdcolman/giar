@@ -10,7 +10,7 @@
   if(!isTouch) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev59-mobile-graph';
+  style.id='giar-rev60-mobile-graph';
   style.textContent=`@media(max-width:700px){
     .graph-stage,.graph-cy{height:clamp(360px,50vh,440px)!important;min-height:360px!important}
     .graph-inspector{max-height:16vh!important}
@@ -22,8 +22,30 @@
     const cy=window.__GIAR_CY__;
     const container=document.getElementById('graph-cy');
     if(!cy||!container||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV59_MOBILE__) return;
-    cy.__GIAR_REV59_MOBILE__=true;
+    if(cy.__GIAR_REV60_MOBILE__) return;
+    cy.__GIAR_REV60_MOBILE__=true;
+
+    /* En móvil, las etiquetas visibles deben dibujarse por encima de todos los
+       nodos y aristas. Antes los nodos del centro tapaban letras y hacían que
+       nombres completos parecieran fragmentados. */
+    cy.style()
+      .selector('node.label-visible')
+      .style({
+        'z-index':100,
+        'text-background-opacity':1,
+        'text-background-padding':4,
+        'text-border-width':1,
+        'text-opacity':1
+      })
+      .selector('node.label-visible.is-selected')
+      .style({
+        'z-index':120,
+        'text-background-opacity':1,
+        'text-background-padding':4,
+        'text-border-width':1,
+        'text-opacity':1
+      })
+      .update();
 
     const visibleNodes=()=>cy.nodes().filter(n=>!n.hasClass('is-hidden'));
     const fitTouch=()=>{
@@ -60,7 +82,7 @@
     },120));
 
     requestAnimationFrame(()=>requestAnimationFrame(fitTouch));
-    window.__GIAR_REV59_FIT_MOBILE__=fitTouch;
+    window.__GIAR_REV60_FIT_MOBILE__=fitTouch;
   };
 
   if(document.readyState==='complete') setup();
