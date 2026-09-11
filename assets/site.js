@@ -11,7 +11,7 @@
   if(!isTouch||!isPhone) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev63-mobile-graph';
+  style.id='giar-rev64-mobile-graph';
   style.textContent=`@media(max-width:700px){
     .graph-stage,.graph-cy{height:clamp(360px,50vh,440px)!important;min-height:360px!important}
     .graph-inspector{max-height:16vh!important}
@@ -32,8 +32,8 @@
     const container=document.getElementById('graph-cy');
     const stage=document.getElementById('graph-stage');
     if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV63_MOBILE__) return;
-    cy.__GIAR_REV63_MOBILE__=true;
+    if(cy.__GIAR_REV64_MOBILE__) return;
+    cy.__GIAR_REV64_MOBILE__=true;
 
     cy.style()
       .selector('node.label-visible')
@@ -78,6 +78,28 @@
       const cx=(bb.x1+bb.x2)/2,cy0=(bb.y1+bb.y2)/2;
       cy.zoom(level);
       cy.pan({x:w/2-cx*level,y:h/2-cy0*level});
+    };
+
+    let lastFocusedSelection='';
+    const focusSelection=()=>{
+      const selected=cy.nodes('.is-selected').filter(n=>!n.hasClass('is-hidden'));
+      if(!selected.length){lastFocusedSelection='';return false;}
+      const nodes=cy.nodes('.is-selected, .is-related').filter(n=>!n.hasClass('is-hidden'));
+      const edges=cy.edges('.is-related').filter(e=>!e.hasClass('is-hidden'));
+      const target=nodes.union(edges);
+      if(!target.length) return false;
+      const padding=nodes.length<=2?115:(nodes.length<=9?88:62);
+      cy.stop(true,false);
+      cy.resize();
+      cy.animate({fit:{eles:target,padding}}, {duration:220,easing:'ease-in-out-cubic',queue:false});
+      lastFocusedSelection=selected[0].id();
+      return true;
+    };
+    const focusIfSelectionChanged=()=>{
+      const selected=cy.nodes('.is-selected').filter(n=>!n.hasClass('is-hidden'));
+      if(!selected.length){lastFocusedSelection='';return false;}
+      if(selected[0].id()===lastFocusedSelection) return false;
+      return focusSelection();
     };
 
     const selectPerson=(id)=>{
@@ -185,25 +207,27 @@
     },true);
 
     const showAll=document.getElementById('show-all');
-    if(showAll) showAll.addEventListener('click',()=>setTimeout(()=>{fitBodies();renderPeople()},30));
+    if(showAll) showAll.addEventListener('click',()=>setTimeout(()=>{lastFocusedSelection='';fitBodies();renderPeople()},30));
 
     const visibility=document.getElementById('graph-visibility');
     if(visibility) visibility.addEventListener('toggle',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
       if(!cy.nodes('.is-selected').length) fitBodies();
+      else focusSelection();
       renderPeople();
     })));
 
     const depth=document.getElementById('selection-depth');
-    if(depth) depth.addEventListener('change',()=>setTimeout(renderPeople,30));
-    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(renderPeople,30)));
+    if(depth) depth.addEventListener('change',()=>setTimeout(()=>{focusSelection();renderPeople()},30));
+    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(()=>{focusIfSelectionChanged();renderPeople()},30)));
     document.addEventListener('click',evt=>{
-      if(evt.target.closest?.('.graph-search-result')) setTimeout(renderPeople,40);
+      if(evt.target.closest?.('.graph-search-result')) setTimeout(()=>{focusIfSelectionChanged();renderPeople()},40);
     });
     cy.on('pan zoom',beginOverlayGesture);
-    cy.on('tap',()=>setTimeout(renderPeople,30));
-    window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(!cy.nodes('.is-selected').length)fitBodies();renderPeople()}));
+    cy.on('tap',()=>setTimeout(()=>{focusIfSelectionChanged();renderPeople()},24));
+    window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(!cy.nodes('.is-selected').length)fitBodies();else focusSelection();renderPeople()}));
     document.addEventListener('fullscreenchange',()=>setTimeout(()=>{
       if(!cy.nodes('.is-selected').length) fitBodies();
+      else focusSelection();
       renderPeople();
     },120));
 
@@ -211,8 +235,9 @@
       fitBodies();
       renderPeople();
     }));
-    window.__GIAR_REV63_FIT_MOBILE__=fitBodies;
-    window.__GIAR_REV63_RENDER_PERSON_LABELS__=renderPeople;
+    window.__GIAR_REV64_FIT_MOBILE__=fitBodies;
+    window.__GIAR_REV64_FOCUS_SELECTION__=focusSelection;
+    window.__GIAR_REV64_RENDER_PERSON_LABELS__=renderPeople;
     window.__GIAR_PERSON_LABEL_MODE__='visible-default-clickable-selection-silences-dim';
   };
 
