@@ -10,30 +10,26 @@
   }
 })();
 
+/* Mantiene la cortina de carga hasta que el viewport y las etiquetas finales estén listos. */
 (() => {
+  const loading=document.getElementById('graph-loading');
   const stage=document.getElementById('graph-stage');
-  if(!stage) return;
-  const style=document.createElement('style');
-  style.id='giar-rev67-prepaint';
-  style.textContent=`
-    .graph-stage.giar-graph-preparing .graph-cy,
-    .graph-stage.giar-graph-preparing .graph-person-label-layer,
-    .graph-stage.giar-graph-preparing .graph-person-lines,
-    .graph-stage.giar-graph-preparing .graph-person-desktop-layer,
-    .graph-stage.giar-graph-preparing .graph-person-desktop-lines{opacity:0!important}
-    .graph-stage.giar-graph-ready .graph-cy,
-    .graph-stage.giar-graph-ready .graph-person-label-layer,
-    .graph-stage.giar-graph-ready .graph-person-lines,
-    .graph-stage.giar-graph-ready .graph-person-desktop-layer,
-    .graph-stage.giar-graph-ready .graph-person-desktop-lines{transition:opacity 90ms ease-out}
-  `;
-  document.head.appendChild(style);
-  stage.classList.add('giar-graph-preparing');
-  window.__GIAR_REVEAL_GRAPH__=()=>{
-    requestAnimationFrame(()=>{
-      stage.classList.remove('giar-graph-preparing');
-      stage.classList.add('giar-graph-ready');
-    });
+  if(!loading||!stage) return;
+  let holding=true;
+  loading.style.zIndex='20';
+  loading.classList.remove('is-hidden');
+  const observer=new MutationObserver(()=>{
+    if(holding&&loading.classList.contains('is-hidden')) loading.classList.remove('is-hidden');
+  });
+  observer.observe(loading,{attributes:true,attributeFilter:['class']});
+  window.__GIAR_RELEASE_LOADING_GATE__=()=>{
+    if(!holding) return;
+    holding=false;
+    observer.disconnect();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      loading.classList.add('is-hidden');
+      setTimeout(()=>{loading.style.zIndex='2'},280);
+    }));
   };
 })();
 
@@ -43,7 +39,7 @@
   if(!isTouch||!isPhone) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev67-mobile-graph';
+  style.id='giar-rev68-mobile-graph';
   style.textContent=`@media(max-width:700px){
     .graph-stage,.graph-cy{height:clamp(360px,50vh,440px)!important;min-height:360px!important}
     .graph-inspector{max-height:16vh!important}
@@ -64,9 +60,9 @@
     const cy=window.__GIAR_CY__;
     const container=document.getElementById('graph-cy');
     const stage=document.getElementById('graph-stage');
-    if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV67_MOBILE__) return;
-    cy.__GIAR_REV67_MOBILE__=true;
+    if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,30);return;}
+    if(cy.__GIAR_REV68_MOBILE__) return;
+    cy.__GIAR_REV68_MOBILE__=true;
 
     cy.style()
       .selector('node.label-visible')
@@ -142,14 +138,14 @@
       if(!selected.length){lastFocusedSelection='';return false;}
       const nodes=cy.nodes('.is-selected, .is-related').filter(n=>!n.hasClass('is-hidden'));
       if(!nodes.length) return false;
-      const bb=nodes.boundingBox({includeLabels:false,includeOverlays:false,includeUnderlays:false});
-      const w=Math.max(1,container.clientWidth),h=Math.max(1,container.clientHeight),pad=28;
-      const fitZoom=Math.min((w-pad*2)/Math.max(1,bb.w),(h-pad*2)/Math.max(1,bb.h));
-      const level=Math.max(cy.minZoom(),Math.min(cy.maxZoom(),fitZoom*1.04));
-      const cx=(bb.x1+bb.x2)/2,cy0=(bb.y1+bb.y2)/2;
       cy.stop(true,false);
       cy.resize();
-      cy.animate({zoom:level,pan:{x:w/2-cx*level,y:h/2-cy0*level}}, {duration:230,easing:'ease-in-out-cubic',queue:false});
+      const viewport=cy.getFitViewport?cy.getFitViewport(nodes,24):null;
+      if(viewport){
+        cy.animate({zoom:viewport.zoom,pan:viewport.pan},{duration:230,easing:'ease-in-out-cubic',queue:false});
+      }else{
+        cy.fit(nodes,24);
+      }
       lastFocusedSelection=selected.id();
       return true;
     };
@@ -326,12 +322,12 @@
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       fitBodies();
       renderPeople();
-      window.__GIAR_REVEAL_GRAPH__?.();
+      window.__GIAR_RELEASE_LOADING_GATE__?.();
     }));
 
-    window.__GIAR_REV67_FIT_MOBILE__=fitBodies;
-    window.__GIAR_REV67_FOCUS_SELECTION__=focusSelection;
-    window.__GIAR_REV67_RENDER_PERSON_LABELS__=renderPeople;
+    window.__GIAR_REV68_FIT_MOBILE__=fitBodies;
+    window.__GIAR_REV68_FOCUS_SELECTION__=focusSelection;
+    window.__GIAR_REV68_RENDER_PERSON_LABELS__=renderPeople;
     window.__GIAR_PERSON_LABEL_MODE__='overlay-default-native-on-selection-hard-switch';
   };
 
@@ -344,7 +340,7 @@
   if(!isDesktop) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev67-desktop-person-labels';
+  style.id='giar-rev68-desktop-person-labels';
   style.textContent=`@media(min-width:701px){
     .graph-person-desktop-lines{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:visible}
     .graph-person-desktop-layer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
@@ -362,9 +358,9 @@
     const cy=window.__GIAR_CY__;
     const container=document.getElementById('graph-cy');
     const stage=document.getElementById('graph-stage');
-    if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV67_DESKTOP__) return;
-    cy.__GIAR_REV67_DESKTOP__=true;
+    if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,30);return;}
+    if(cy.__GIAR_REV68_DESKTOP__) return;
+    cy.__GIAR_REV68_DESKTOP__=true;
 
     cy.style()
       .selector('node[type = "person"]')
@@ -491,9 +487,9 @@
 
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       renderPeople();
-      window.__GIAR_REVEAL_GRAPH__?.();
+      window.__GIAR_RELEASE_LOADING_GATE__?.();
     }));
-    window.__GIAR_REV67_RENDER_DESKTOP_PERSON_LABELS__=renderPeople;
+    window.__GIAR_REV68_RENDER_DESKTOP_PERSON_LABELS__=renderPeople;
   };
 
   if(document.readyState==='complete')setup();
