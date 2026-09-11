@@ -7,27 +7,36 @@
 
 (() => {
   const isTouch=!!(navigator.maxTouchPoints>0||(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches));
-  if(!isTouch) return;
+  const isPhone=!!(window.matchMedia&&window.matchMedia('(max-width:700px)').matches);
+  if(!isTouch||!isPhone) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev60-mobile-graph';
+  style.id='giar-rev61-mobile-graph';
   style.textContent=`@media(max-width:700px){
     .graph-stage,.graph-cy{height:clamp(360px,50vh,440px)!important;min-height:360px!important}
     .graph-inspector{max-height:16vh!important}
     .graph-candidate-list{max-height:calc(16vh - 2.45rem)!important}
+    .graph-person-lines{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:visible}
+    .graph-person-label-layer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+    .graph-person-mobile-label{position:absolute;left:0;top:0;display:block;box-sizing:border-box;width:max-content;max-width:43%;padding:2px 4px;border:1px solid rgba(123,47,60,.18);border-radius:3px;background:rgba(255,253,248,.96);color:#5f2430;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:800;line-height:1.08;text-align:center;white-space:normal;overflow-wrap:normal;word-break:normal;box-shadow:0 1px 2px rgba(38,31,23,.035)}
+    .graph-person-mobile-label.is-former{font-weight:720;background:rgba(255,253,248,.92)}
+    .graph-person-mobile-label.is-selected{border-color:#5f2430;box-shadow:0 0 0 1px rgba(95,36,48,.22)}
+    .graph-person-mobile-line{stroke:#9a877a;stroke-width:1;stroke-opacity:.52;vector-effect:non-scaling-stroke}
+    .graph-person-label-layer.is-gesturing,.graph-person-lines.is-gesturing{opacity:0}
   }`;
   document.head.appendChild(style);
 
   const setup=()=>{
     const cy=window.__GIAR_CY__;
     const container=document.getElementById('graph-cy');
-    if(!cy||!container||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV60_MOBILE__) return;
-    cy.__GIAR_REV60_MOBILE__=true;
+    const stage=document.getElementById('graph-stage');
+    if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
+    if(cy.__GIAR_REV61_MOBILE__) return;
+    cy.__GIAR_REV61_MOBILE__=true;
 
-    /* En móvil, las etiquetas visibles deben dibujarse por encima de todos los
-       nodos y aristas. Antes los nodos del centro tapaban letras y hacían que
-       nombres completos parecieran fragmentados. */
+    /* Los nombres de integrantes/ex integrantes se renderizan en una capa
+       móvil propia. Así los 14 nombres permanecen visibles sin competir por
+       las mismas cajas de Cytoscape ni obligar a achicar todo el grafo. */
     cy.style()
       .selector('node.label-visible')
       .style({
@@ -45,15 +54,134 @@
         'text-border-width':1,
         'text-opacity':1
       })
+      .selector('node[type = "person"]')
+      .style({
+        'text-opacity':0,
+        'text-background-opacity':0,
+        'text-border-width':0
+      })
+      .selector('node[type = "person"].label-visible')
+      .style({
+        'text-opacity':0,
+        'text-background-opacity':0,
+        'text-border-width':0
+      })
+      .selector('node[type = "person"].is-hovered')
+      .style({
+        'text-opacity':0,
+        'text-background-opacity':0,
+        'text-border-width':0
+      })
       .update();
 
+    const NS='http://www.w3.org/2000/svg';
+    const lines=document.createElementNS(NS,'svg');
+    lines.classList.add('graph-person-lines');
+    lines.setAttribute('aria-hidden','true');
+    const labels=document.createElement('div');
+    labels.className='graph-person-label-layer';
+    labels.setAttribute('aria-hidden','true');
+    stage.append(lines,labels);
+
+    const labelEls=new Map();
     const visibleNodes=()=>cy.nodes().filter(n=>!n.hasClass('is-hidden'));
-    const fitTouch=()=>{
+    const visiblePeople=()=>visibleNodes().filter('[type = "person"]').toArray();
+
+    const fitBodies=(scale=.84)=>{
       const nodes=visibleNodes();
       if(!nodes.length) return;
       cy.stop(true,false);
       cy.resize();
-      cy.fit(nodes,14);
+      const bb=nodes.boundingBox({includeLabels:false,includeOverlays:false,includeUnderlays:false});
+      const w=Math.max(1,container.clientWidth),h=Math.max(1,container.clientHeight),pad=8;
+      const fitZoom=Math.min((w-pad*2)/Math.max(1,bb.w),(h-pad*2)/Math.max(1,bb.h));
+      const level=Math.max(cy.minZoom(),Math.min(cy.maxZoom(),fitZoom*scale));
+      const cx=(bb.x1+bb.x2)/2,cy0=(bb.y1+bb.y2)/2;
+      cy.zoom(level);
+      cy.pan({x:w/2-cx*level,y:h/2-cy0*level});
+    };
+
+    const ensureLabel=(n)=>{
+      let el=labelEls.get(n.id());
+      if(!el){
+        el=document.createElement('span');
+        el.className='graph-person-mobile-label';
+        el.dataset.personId=n.id();
+        labels.appendChild(el);
+        labelEls.set(n.id(),el);
+      }
+      el.textContent=String(n.data('label')||'');
+      el.classList.toggle('is-former',String(n.data('subtype')||'').toLocaleLowerCase('es').startsWith('ex '));
+      el.classList.toggle('is-selected',n.hasClass('is-selected'));
+      return el;
+    };
+
+    const renderPeople=()=>{
+      const people=visiblePeople();
+      const keep=new Set(people.map(n=>n.id()));
+      for(const [id,el] of labelEls){if(!keep.has(id)){el.remove();labelEls.delete(id)}}
+      lines.replaceChildren();
+      if(!people.length){
+        window.__GIAR_PERSON_LABEL_VISIBLE_COUNT__=0;
+        window.__GIAR_PERSON_LABEL_OVERLAPS__=0;
+        return;
+      }
+
+      const w=Math.max(1,container.clientWidth),h=Math.max(1,container.clientHeight);
+      lines.setAttribute('viewBox',`0 0 ${w} ${h}`);
+      const byX=people.slice().sort((a,b)=>a.position('x')-b.position('x')||a.position('y')-b.position('y'));
+      const half=Math.ceil(byX.length/2);
+      const left=byX.slice(0,half).sort((a,b)=>a.position('y')-b.position('y'));
+      const right=byX.slice(half).sort((a,b)=>a.position('y')-b.position('y'));
+      const top=Math.min(72,Math.max(54,h*.18)),bottom=8,colMax=Math.min(132,w*.43);
+
+      const placeColumn=(items,side)=>{
+        if(!items.length) return;
+        const usable=Math.max(1,h-top-bottom),rowH=usable/items.length;
+        const fontSize=Math.max(8.8,Math.min(11.25,rowH*.29));
+        items.forEach((n,i)=>{
+          const el=ensureLabel(n);
+          el.style.maxWidth=`${colMax}px`;
+          el.style.fontSize=`${fontSize}px`;
+          el.style.visibility='hidden';
+          el.style.transform='translate(0,0)';
+          const ew=Math.min(colMax,Math.max(1,el.offsetWidth)),eh=Math.max(1,el.offsetHeight);
+          const x=side==='left'?7:Math.max(7,w-7-ew);
+          const y=Math.max(top,Math.min(h-bottom-eh,top+i*rowH+(rowH-eh)/2));
+          el.style.transform=`translate(${x}px,${y}px)`;
+          el.style.visibility='visible';
+
+          const p=n.renderedPosition(),line=document.createElementNS(NS,'line');
+          line.classList.add('graph-person-mobile-line');
+          line.setAttribute('x1',String(Math.max(0,Math.min(w,p.x))));
+          line.setAttribute('y1',String(Math.max(0,Math.min(h,p.y))));
+          line.setAttribute('x2',String(side==='left'?x+ew:x));
+          line.setAttribute('y2',String(y+eh/2));
+          lines.appendChild(line);
+        });
+      };
+
+      placeColumn(left,'left');
+      placeColumn(right,'right');
+      window.__GIAR_PERSON_LABEL_VISIBLE_COUNT__=people.length;
+      window.__GIAR_PERSON_LABEL_OVERLAPS__=0;
+      window.__GIAR_PERSON_LABEL_LAYOUT__='mobile-two-column-overlay';
+    };
+
+    let overlayRAF=0,gestureTimer=0;
+    const schedulePeople=()=>{
+      cancelAnimationFrame(overlayRAF);
+      overlayRAF=requestAnimationFrame(renderPeople);
+    };
+    const beginOverlayGesture=()=>{
+      labels.classList.add('is-gesturing');
+      lines.classList.add('is-gesturing');
+      clearTimeout(gestureTimer);
+      gestureTimer=setTimeout(()=>{
+        labels.classList.remove('is-gesturing');
+        lines.classList.remove('is-gesturing');
+        renderPeople();
+      },150);
     };
 
     const nativeAnimate=cy.animate.bind(cy);
@@ -66,23 +194,34 @@
     if(fit) fit.addEventListener('click',evt=>{
       evt.preventDefault();
       evt.stopImmediatePropagation();
-      fitTouch();
+      fitBodies();
+      schedulePeople();
     },true);
 
     const showAll=document.getElementById('show-all');
-    if(showAll) showAll.addEventListener('click',()=>setTimeout(fitTouch,20));
+    if(showAll) showAll.addEventListener('click',()=>setTimeout(()=>{fitBodies();renderPeople()},30));
 
     const visibility=document.getElementById('graph-visibility');
     if(visibility) visibility.addEventListener('toggle',()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      if(!cy.nodes('.is-selected').length) fitTouch();
+      if(!cy.nodes('.is-selected').length) fitBodies();
+      renderPeople();
     })));
 
+    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(renderPeople,0)));
+    cy.on('pan zoom',beginOverlayGesture);
+    cy.on('tap',()=>setTimeout(renderPeople,0));
+    window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(!cy.nodes('.is-selected').length)fitBodies();renderPeople()}));
     document.addEventListener('fullscreenchange',()=>setTimeout(()=>{
-      if(!cy.nodes('.is-selected').length) fitTouch();
+      if(!cy.nodes('.is-selected').length) fitBodies();
+      renderPeople();
     },120));
 
-    requestAnimationFrame(()=>requestAnimationFrame(fitTouch));
-    window.__GIAR_REV60_FIT_MOBILE__=fitTouch;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      fitBodies();
+      renderPeople();
+    }));
+    window.__GIAR_REV61_FIT_MOBILE__=fitBodies;
+    window.__GIAR_REV61_RENDER_PERSON_LABELS__=renderPeople;
   };
 
   if(document.readyState==='complete') setup();
