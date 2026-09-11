@@ -11,16 +11,17 @@
   if(!isTouch||!isPhone) return;
 
   const style=document.createElement('style');
-  style.id='giar-rev61-mobile-graph';
+  style.id='giar-rev62-mobile-graph';
   style.textContent=`@media(max-width:700px){
     .graph-stage,.graph-cy{height:clamp(360px,50vh,440px)!important;min-height:360px!important}
     .graph-inspector{max-height:16vh!important}
     .graph-candidate-list{max-height:calc(16vh - 2.45rem)!important}
     .graph-person-lines{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:visible}
     .graph-person-label-layer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
-    .graph-person-mobile-label{position:absolute;left:0;top:0;display:block;box-sizing:border-box;width:max-content;max-width:43%;padding:2px 4px;border:1px solid rgba(123,47,60,.18);border-radius:3px;background:rgba(255,253,248,.96);color:#5f2430;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:800;line-height:1.08;text-align:center;white-space:normal;overflow-wrap:normal;word-break:normal;box-shadow:0 1px 2px rgba(38,31,23,.035)}
+    .graph-person-mobile-label{position:absolute;left:0;top:0;display:block;box-sizing:border-box;width:max-content;max-width:43%;padding:2px 4px;border:1px solid rgba(123,47,60,.18);border-radius:3px;background:rgba(255,253,248,.96);color:#5f2430;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;font-weight:800;line-height:1.08;text-align:center;white-space:normal;overflow-wrap:normal;word-break:normal;box-shadow:0 1px 2px rgba(38,31,23,.035);pointer-events:auto;cursor:pointer;touch-action:manipulation}
     .graph-person-mobile-label.is-former{font-weight:720;background:rgba(255,253,248,.92)}
     .graph-person-mobile-label.is-selected{border-color:#5f2430;box-shadow:0 0 0 1px rgba(95,36,48,.22)}
+    .graph-person-mobile-label:focus-visible{outline:2px solid #7b2f3c;outline-offset:2px}
     .graph-person-mobile-line{stroke:#9a877a;stroke-width:1;stroke-opacity:.52;vector-effect:non-scaling-stroke}
     .graph-person-label-layer.is-gesturing,.graph-person-lines.is-gesturing{opacity:0}
   }`;
@@ -31,12 +32,9 @@
     const container=document.getElementById('graph-cy');
     const stage=document.getElementById('graph-stage');
     if(!cy||!container||!stage||!window.__GIAR_GRAPH_READY__){setTimeout(setup,40);return;}
-    if(cy.__GIAR_REV61_MOBILE__) return;
-    cy.__GIAR_REV61_MOBILE__=true;
+    if(cy.__GIAR_REV62_MOBILE__) return;
+    cy.__GIAR_REV62_MOBILE__=true;
 
-    /* Los nombres de integrantes/ex integrantes se renderizan en una capa
-       móvil propia. Así los 14 nombres permanecen visibles sin competir por
-       las mismas cajas de Cytoscape ni obligar a achicar todo el grafo. */
     cy.style()
       .selector('node.label-visible')
       .style({
@@ -58,7 +56,8 @@
       .style({
         'text-opacity':0,
         'text-background-opacity':0,
-        'text-border-width':0
+        'text-border-width':0,
+        'text-events':'yes'
       })
       .selector('node[type = "person"].label-visible')
       .style({
@@ -72,6 +71,12 @@
         'text-background-opacity':0,
         'text-border-width':0
       })
+      .selector('node.is-dim')
+      .style({
+        'text-opacity':0,
+        'text-background-opacity':0,
+        'text-border-width':0
+      })
       .update();
 
     const NS='http://www.w3.org/2000/svg';
@@ -80,12 +85,15 @@
     lines.setAttribute('aria-hidden','true');
     const labels=document.createElement('div');
     labels.className='graph-person-label-layer';
-    labels.setAttribute('aria-hidden','true');
+    labels.setAttribute('aria-label','Integrantes y ex integrantes del grafo');
     stage.append(lines,labels);
 
     const labelEls=new Map();
     const visibleNodes=()=>cy.nodes().filter(n=>!n.hasClass('is-hidden'));
-    const visiblePeople=()=>visibleNodes().filter('[type = "person"]').toArray();
+    const visiblePeople=()=>{
+      const hasSelection=cy.nodes('.is-selected').length>0;
+      return visibleNodes().filter('[type = "person"]').filter(n=>!hasSelection||!n.hasClass('is-dim')).toArray();
+    };
 
     const fitBodies=(scale=.84)=>{
       const nodes=visibleNodes();
@@ -101,16 +109,29 @@
       cy.pan({x:w/2-cx*level,y:h/2-cy0*level});
     };
 
+    const selectPerson=(id)=>{
+      const n=cy.getElementById(id);
+      if(!n||!n.length||n.hasClass('is-hidden')) return;
+      n.emit('tap');
+    };
+
     const ensureLabel=(n)=>{
       let el=labelEls.get(n.id());
       if(!el){
-        el=document.createElement('span');
+        el=document.createElement('button');
+        el.type='button';
         el.className='graph-person-mobile-label';
         el.dataset.personId=n.id();
+        el.addEventListener('click',evt=>{
+          evt.preventDefault();
+          evt.stopPropagation();
+          selectPerson(el.dataset.personId);
+        });
         labels.appendChild(el);
         labelEls.set(n.id(),el);
       }
       el.textContent=String(n.data('label')||'');
+      el.setAttribute('aria-label',`Seleccionar ${String(n.data('label')||'integrante')}`);
       el.classList.toggle('is-former',String(n.data('subtype')||'').toLocaleLowerCase('es').startsWith('ex '));
       el.classList.toggle('is-selected',n.hasClass('is-selected'));
       return el;
@@ -165,7 +186,7 @@
       placeColumn(right,'right');
       window.__GIAR_PERSON_LABEL_VISIBLE_COUNT__=people.length;
       window.__GIAR_PERSON_LABEL_OVERLAPS__=0;
-      window.__GIAR_PERSON_LABEL_LAYOUT__='mobile-two-column-overlay';
+      window.__GIAR_PERSON_LABEL_LAYOUT__=cy.nodes('.is-selected').length?'mobile-related-tree-overlay':'mobile-two-column-overlay';
     };
 
     let overlayRAF=0,gestureTimer=0;
@@ -207,9 +228,14 @@
       renderPeople();
     })));
 
-    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(renderPeople,0)));
+    const depth=document.getElementById('selection-depth');
+    if(depth) depth.addEventListener('change',()=>setTimeout(renderPeople,30));
+    document.querySelectorAll('[data-node-filter],[data-edge-filter]').forEach(input=>input.addEventListener('change',()=>setTimeout(renderPeople,30)));
+    document.addEventListener('click',evt=>{
+      if(evt.target.closest?.('.graph-search-result')) setTimeout(renderPeople,40);
+    });
     cy.on('pan zoom',beginOverlayGesture);
-    cy.on('tap',()=>setTimeout(renderPeople,0));
+    cy.on('tap',()=>setTimeout(renderPeople,30));
     window.addEventListener('resize',()=>requestAnimationFrame(()=>{if(!cy.nodes('.is-selected').length)fitBodies();renderPeople()}));
     document.addEventListener('fullscreenchange',()=>setTimeout(()=>{
       if(!cy.nodes('.is-selected').length) fitBodies();
@@ -220,8 +246,9 @@
       fitBodies();
       renderPeople();
     }));
-    window.__GIAR_REV61_FIT_MOBILE__=fitBodies;
-    window.__GIAR_REV61_RENDER_PERSON_LABELS__=renderPeople;
+    window.__GIAR_REV62_FIT_MOBILE__=fitBodies;
+    window.__GIAR_REV62_RENDER_PERSON_LABELS__=renderPeople;
+    window.__GIAR_PERSON_LABEL_MODE__='visible-default-clickable-selection-silences-dim';
   };
 
   if(document.readyState==='complete') setup();
